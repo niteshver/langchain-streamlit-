@@ -122,17 +122,43 @@ from langchain_community.vectorstores import FAISS
 # else:
 #     print("No source documents returned.")
 
-
 import streamlit as st
+from PyPDF2 import PdfReader
 
 st.title("File Uploader")
-file_uploader = st.file_uploader("Upload ur file")
+
+file_uploader = st.file_uploader("Upload your PDF file", type=["pdf"])
+
 if file_uploader:
     reader = PdfReader(file_uploader)
 
-raw_text = []
-for page in reader.pages:
-    text = page.extract_text()
-    if text:
-        raw_text.append(text)
-        raw_text = "\n".join(raw_text)
+    raw_text_list = []   # keep list of pages
+
+    for page in reader.pages:
+        text = page.extract_text()
+        if text:
+            raw_text_list.append(text)
+
+    # Convert to one string AFTER the loop
+    raw_text = "\n".join(raw_text_list)
+
+    st.success("PDF Loaded Successfully!")
+    st.write(raw_text)
+
+if raw_text:
+    text_splitter = CharacterTextSplitter(separator="\n",chunk_size = 500, chunk_overlap = 100,len_function = len)
+    text_split = text_splitter.split_text(raw_text)
+    embeddings = OpenAIEmbeddings()
+    vectore_store = FAISS.from_text(text_split,embeddings)
+
+from langchain_openai import ChatOpenAI
+query = st.text_input("Ask something about pdf")
+if query:
+    docs = vectore_store.similarity_search(query, k = 3)
+    llm = ChatOpenAI(model = "gpt-4o-mini")
+    response = llm.invoke(
+    f"Answer the question using only this information: {docs}\nQuestion: {query}"
+)
+st.write(response)
+
+    
