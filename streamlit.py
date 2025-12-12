@@ -20,3 +20,9 @@ relation_ship = st.radio("Relationship StatusL",
 st.info(f"U ar {relation_ship} now")
 if relation_ship =="Single":
     st.balloons()
+else:
+    st.snow()
+
+uploaded_file = st.file_uploader("Ypload ur pic")
+if uploaded_file:
+    st.image(uploaded_file)
