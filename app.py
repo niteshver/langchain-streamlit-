@@ -52,7 +52,7 @@ if query and st.session_state.vector_store:
 
     llm = ChatOpenAI(
         base_url="https://api.perplexity.ai",
-        api_key=os.environ["PERPLEXITY_API_KEY"],
+        api_key=os.environ["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"],
         model="llama-3.1-sonar-small-128k-online"
     )
 
