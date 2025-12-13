@@ -5,6 +5,7 @@ from langchain_text_splitters import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 import os
+from langchain_openai import OpenAIEmbeddings
 
 st.title("📄 Chat with PDF")
 
@@ -34,9 +35,12 @@ if file_uploader and st.session_state.vector_store is None:
 
     chunks = text_splitter.split_text(raw_text)
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    
+
+    embeddings = OpenAIEmbeddings(
+        model="text-embedding-3-small"
     )
+
 
     st.session_state.vector_store = FAISS.from_texts(chunks, embeddings)
 
