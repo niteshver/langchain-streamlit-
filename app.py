@@ -1,19 +1,21 @@
 import streamlit as st
 from PyPDF2 import PdfReader
-
 from langchain_openai import ChatOpenAI
 from langchain_text_splitters import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+import os
 
-st.title("📄 Chat with PDF (Perplexity)")
+st.title("📄 Chat with PDF")
 
-raw_text = ""
-vector_store = None   
+# ---------- SESSION STATE INIT ----------
+if "vector_store" not in st.session_state:
+    st.session_state.vector_store = None
 
+# ---------- FILE UPLOAD ----------
 file_uploader = st.file_uploader("Upload your PDF file", type=["pdf"])
 
-if file_uploader:
+if file_uploader and st.session_state.vector_store is None:
     reader = PdfReader(file_uploader)
     pages = []
 
@@ -23,7 +25,6 @@ if file_uploader:
             pages.append(text)
 
     raw_text = "\n".join(pages)
-    st.success("PDF Loaded Successfully!")
 
     text_splitter = CharacterTextSplitter(
         separator="\n",
@@ -33,23 +34,25 @@ if file_uploader:
 
     chunks = text_splitter.split_text(raw_text)
 
-    # ✅ LOCAL EMBEDDINGS (NO OPENAI)
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    vector_store = FAISS.from_texts(chunks, embeddings)
+    st.session_state.vector_store = FAISS.from_texts(chunks, embeddings)
 
+    st.success("PDF processed successfully!")
+
+# ---------- QUERY INPUT (ALWAYS VISIBLE) ----------
 query = st.text_input("Ask something about the PDF")
 
-if query and vector_store:
-    docs = vector_store.similarity_search(query, k=3)
+# ---------- ANSWER ----------
+if query and st.session_state.vector_store:
+    docs = st.session_state.vector_store.similarity_search(query, k=3)
     context = "\n\n".join([doc.page_content for doc in docs])
 
-    # ✅ PERPLEXITY LLM (OpenAI-compatible)
     llm = ChatOpenAI(
         base_url="https://api.perplexity.ai",
-        api_key=st.secrets["PERPLEXITY_API_KEY"],  # or env var
+        api_key=os.environ["PERPLEXITY_API_KEY"],
         model="llama-3.1-sonar-small-128k-online"
     )
 
