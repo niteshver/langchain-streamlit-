@@ -40,7 +40,7 @@ if file_uploader and st.session_state.vector_store is None:
 
     st.session_state.vector_store = FAISS.from_texts(chunks, embeddings)
 
-    st.success("PDF processed successfully!")
+    # st.success("PDF processed successfully!")
 
 # ---------- QUERY INPUT (ALWAYS VISIBLE) ----------
 query = st.text_input("Ask something about the PDF")
