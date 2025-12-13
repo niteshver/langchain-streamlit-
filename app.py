@@ -26,7 +26,7 @@ if file_uploader:
 
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=500,
+        chunk_size=300,
         chunk_overlap=100
     )
 
@@ -37,7 +37,7 @@ if file_uploader:
 query = st.text_input("Ask something about pdf")
 
 if query and vector_store:
-    docs = vector_store.similarity_search(query, k=3)
+    docs = vector_store.similarity_search(query, k=2)
     llm = ChatOpenAI(model="gpt-4o-mini")
 
     response = llm.invoke(
