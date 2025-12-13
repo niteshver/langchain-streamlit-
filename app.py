@@ -1,11 +1,12 @@
 import streamlit as st
 from PyPDF2 import PdfReader
+
 from langchain_openai import ChatOpenAI
-from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import CharacterTextSplitter
-from PyPDF2 import PdfReader
 from langchain_community.vectorstores import FAISS
-st.title("File Uploader")
+from langchain.embeddings import HuggingFaceEmbeddings
+
+st.title("📄 Chat with PDF (Perplexity)")
 
 raw_text = ""
 vector_store = None   
@@ -26,25 +27,43 @@ if file_uploader:
 
     text_splitter = CharacterTextSplitter(
         separator="\n",
-        chunk_size=300,
+        chunk_size=500,
         chunk_overlap=100
     )
 
-    text_split = text_splitter.split_text(raw_text)
-    embeddings = OpenAIEmbeddings()
-    vector_store = FAISS.from_texts(text_split, embeddings)
+    chunks = text_splitter.split_text(raw_text)
 
-query = st.text_input("Ask something about pdf")
+    # ✅ LOCAL EMBEDDINGS (NO OPENAI)
+    embeddings = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    vector_store = FAISS.from_texts(chunks, embeddings)
+
+query = st.text_input("Ask something about the PDF")
 
 if query and vector_store:
-    docs = vector_store.similarity_search(query, k=2)
-    llm = ChatOpenAI(model="gpt-4o-mini")
+    docs = vector_store.similarity_search(query, k=3)
+    context = "\n\n".join([doc.page_content for doc in docs])
+
+    # ✅ PERPLEXITY LLM (OpenAI-compatible)
+    llm = ChatOpenAI(
+        base_url="https://api.perplexity.ai",
+        api_key=st.secrets["PERPLEXITY_API_KEY"],  # or env var
+        model="llama-3.1-sonar-small-128k-online"
+    )
 
     response = llm.invoke(
-        f"Answer the question using only this information:\n{docs}\n\nQuestion: {query}"
+        f"""
+        Answer using ONLY the context below.
+        If not found, say "Not found in document".
+
+        Context:
+        {context}
+
+        Question:
+        {query}
+        """
     )
 
     st.write(response.content)
-
-
-    
